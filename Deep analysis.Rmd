@@ -1,0 +1,76 @@
+---
+title: "Deep analysis of trip length"
+output: html_document
+---
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data loading
+
+I will load 2 pieces of data. The table exported from Bigquery containing information about day of trip, membership type, stations and number of trips. We will focus this analysis on the most frequented stations by casual members who are the target of the campaign.
+
+
+```{r rides }
+library(tidyverse)
+
+#load data with readr
+#some stations have no name. I will remove NA
+
+bike_share_day<-read.csv("/Volumes/HP P500/Data Analyst capstone/bikeshare_analysis_20221107.csv",na="") %>% drop_na()
+
+stations <- read.csv("/Volumes/HP P500/Data Analyst capstone/most_freq_stations_20221121.csv")
+
+
+#a quick look
+head(bike_share_day)
+head(stations)
+
+#plot 10 top stations:
+
+station_plot <- ggplot(data=stations) + 
+  geom_col(aes(x=start_station_name,y=num_trips_casual)) +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5)) +
+  scale_x_discrete(limits = stations$start_station_name)
+  
+show(station_plot)
+
+```
+
+## Data Analysis and report
+
+Now that we have our data loaded we can dig into it. I will analyze in which day there are more casual members for each station so marketing can focus the campaign on those days. To have a panoramic for the 10 stations I will plot them on a grid of graphics.
+
+
+```{r plot analysis }
+#First I filter only the 10 most popular stations for casual bikers.
+library(ggplot2)
+
+bike_share_top <- bike_share_day %>% filter(start_station_name %in% stations$start_station_name) %>% mutate(day_of_trip=factor(day_of_trip))
+
+
+
+
+
+plot <- ggplot(data=bike_share_top) + geom_point(mapping=aes(x=day_of_trip,y=num_trips_per_station,color=member_casual,size=avg_ride_length,alpha=0.8)) +
+  facet_wrap(~start_station_name)+
+  labs(title = "bike trips per weekday", x = "day of the week", y="number of trips")+
+  scale_x_discrete(limits=c(2, 3, 4, 5, 6,7,1), labels=c( "Tue", "Wed", "Thu", "Fri", "Sat","Sun","Mon"))+
+  guides(alpha=FALSE) +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5),
+        strip.text.x = element_text(size = 5))
+show(plot)
+
+```
+
+
+From this graphic we can see something interesting. Despite each of the memeber types has a most frequent day, casual members concentrate all the trips in the weekends for all stations. This reassures that casual memebers use their bikes for leisure mainly.
+
+
+Also we can note that casual trips are longer. This could be due to that leisure trips are usually longer or that purchasing a single day or single trip pass for a short trip is not attractive.
+
+
